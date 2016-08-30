@@ -1,0 +1,131 @@
+{
+	"builders": [
+		{
+			"ami_block_device_mappings": [
+				{
+					"delete_on_termination": true,
+					"device_name": "/dev/xvda",
+					"volume_size": 20
+				}
+			],
+			"ami_name": "zk-exhibitor-{{isotime \"2006-01-02_Mon_15.04\"}}",
+			"associate_public_ip_address": true,
+			"instance_type": "m3.medium",
+			"launch_block_device_mappings": [
+				{
+					"delete_on_termination": true,
+					"device_name": "/dev/xvda",
+					"volume_size": 20
+				}
+			],
+			"region": "{{user `region`}}",
+			"run_tags": {
+				"product": "devops",
+				"purpose": "building_ami"
+			},
+			"source_ami": "{{user `aws_ami`}}",
+			"ssh_username": "admin",
+			"tags": {
+				"product": "devops",
+				"purpose": "zookeeper"
+			},
+			"temporary_key_pair_name": "packer-zookeeper-tmp-{{isotime \"2006-01-02_Mon_15.04\"}}",
+			"type": "amazon-ebs"
+		}
+	],
+	"provisioners": [
+		{
+			"destination": "/tmp/telegraf.conf",
+			"source": "./templates/telegraf-agent.tpl",
+			"type": "file"
+		},
+		{
+			"destination": "/tmp/telegraf_forwarder.conf",
+			"source": "./templates/telegraf-forwarder.tpl",
+			"type": "file"
+		},
+		{
+			"destination": "/tmp/telegraf_resource.conf",
+			"source": "./templates/telegraf-resource.tpl",
+			"type": "file"
+		},
+		{
+			"destination": "/tmp/telegraf_zookeeper.conf",
+			"source": "./templates/telegraf-zookeeper.tpl",
+			"type": "file"
+		},
+		{
+			"destination": "/tmp/exhibitor.service",
+			"source": "templates/exhibitor.service",
+			"type": "file"
+		},
+		{
+			"destination": "/tmp/exhibitor_default.conf",
+			"source": "templates/exhibitor_default.conf",
+			"type": "file"
+		},
+		{
+			"destination": "/tmp/telegraf",
+			"source": "{{user `telegraf_patch`}}",
+			"type": "file"
+		},
+		{
+			"destination": "/tmp/rsyslog.conf",
+			"source": "./templates/rsyslog-zookeeper.tpl",
+			"type": "file"
+		},
+		{
+			"destination": "/tmp/rsyslog.relp.conf",
+			"source": "./templates/rsyslog-relp.tpl",
+			"type": "file"
+		},
+		{
+			"destination": "/tmp/logrotate.conf",
+			"source": "./templates/logrotate-zookeeper.tpl",
+			"type": "file"
+		},
+		{
+			"inline": [
+				"sudo apt-get update",
+				"sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" --force-yes",
+				"sudo DEBIAN_FRONTEND=noninteractive apt-get install -o Dpkg::Options::=\"--force-confold\" --force-yes -y ntp openjdk-7-jdk parted maven zookeeper wget rsyslog-relp",
+				"sudo mkdir -p /opt/exhibitor/",
+				"sudo wget {{user `exhibitor_pom`}} -O /opt/exhibitor/pom.xml",
+				"cd /opt/exhibitor/",
+				"sudo mvn clean package",
+				"sudo ln -s /opt/exhibitor/$(find -name 'exhibitor*.jar'|tail -1) /opt/exhibitor/exhibitor.jar",
+				"sudo cp /tmp/exhibitor.service /lib/systemd/system/exhibitor.service",
+				"sudo cp /tmp/exhibitor_default.conf /opt/exhibitor/default.conf",
+				"sudo systemctl enable exhibitor",
+				"sudo ln -s /usr/share/java/zookeeper.jar /etc/zookeeper/zookeeper.jar",
+				"sudo ln -s /usr/share/java /etc/zookeeper/lib",
+				"sudo ln -s /usr/share/zookeeper/bin /etc/zookeeper/bin",
+				"sudo cp -f /tmp/rsyslog.conf /etc/rsyslog.d/zookeeper.conf",
+				"sudo cp -f /tmp/rsyslog.relp.conf /etc/rsyslog.d/relp.conf",
+				"sudo cp -f /tmp/logrotate.conf /etc/logrotate.d/zookeeper.conf",
+				"wget {{user `telegraf_url`}} -O /tmp/telegraf.deb",
+				"sudo dpkg -i /tmp/telegraf.deb ",
+				"sudo cp -f /tmp/telegraf /usr/bin/telegraf",
+				"sudo chmod 755 /usr/bin/telegraf",
+				"sudo cp -f /tmp/telegraf.conf /etc/telegraf/telegraf.conf",
+				"sudo cp -f /tmp/telegraf_resource.conf /etc/telegraf/telegraf.d/resource.conf",
+				"sudo cp -f /tmp/telegraf_zookeeper.conf /etc/telegraf/telegraf.d/zookeeper.conf",
+				"sudo cp -f /tmp/telegraf_forwarder.conf /etc/telegraf/telegraf.d/forwarder.conf",
+				"sudo apt-get autoremove -y",
+				"sudo apt-get clean",
+				"sudo rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*",
+				"sudo /sbin/parted ---pretend-input-tty /dev/xvda resizepart 1 yes 20G",
+				"sudo resize2fs /dev/xvda1"
+			],
+			"type": "shell"
+		}
+	],
+	"variables": {
+		"_comment": "https://wiki.debian.org/Cloud/AmazonEC2Image/Jessie",
+		"aws_ami": "ami-e31a6594",
+		"exhibitor_pom": "https://raw.githubusercontent.com/Netflix/exhibitor/v1.5.6/exhibitor-standalone/src/main/resources/buildscripts/standalone/maven/pom.xml",
+		"region": "eu-west-1",
+		"telegraf_patch": "./telegraf",
+		"telegraf_url": "https://dl.influxdata.com/telegraf/releases/telegraf_0.13.0_amd64.deb"
+	}
+}

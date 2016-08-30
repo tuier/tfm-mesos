@@ -1,0 +1,143 @@
+{
+	"builders": [
+		{
+			"ami_block_device_mappings": [
+				{
+					"delete_on_termination": true,
+					"device_name": "/dev/xvda",
+					"volume_size": 50
+				}
+			],
+			"ami_name": "mesos-agent-{{user `version`}}-{{isotime `2006-01-02_15_04`}}",
+			"associate_public_ip_address": true,
+			"instance_type": "m3.medium",
+			"launch_block_device_mappings": [
+				{
+					"delete_on_termination": true,
+					"device_name": "/dev/xvda",
+					"volume_size": 50
+				}
+			],
+			"region": "{{user `region`}}",
+			"run_tags": {
+				"product": "devops",
+				"purpose": "building_ami"
+			},
+			"source_ami": "{{user `aws_ami`}}",
+			"ssh_username": "admin",
+			"tags": {
+				"product": "devops",
+				"purpose": "mesos-agent"
+			},
+			"temporary_key_pair_name": "packer-mesos-agent-tmp-{{isotime `2006-01-02-15-04`}}",
+			"type": "amazon-ebs"
+		}
+	],
+	"provisioners": [
+		{
+			"destination": "/tmp/telegraf",
+			"source": "{{user `telegraf_patch`}}",
+			"type": "file"
+		},
+		{
+			"destination": "/tmp/mesos-agent-module",
+			"source": "./templates/modules-agent.tpl",
+			"type": "file"
+		},
+		{
+			"destination": "/tmp/rsyslog.conf",
+			"source": "./templates/rsyslog-mesos.tpl",
+			"type": "file"
+		},
+		{
+			"destination": "/tmp/rsyslog.relp.conf",
+			"source": "./templates/rsyslog-relp.tpl",
+			"type": "file"
+		},
+		{
+			"destination": "/tmp/logrotate.conf",
+			"source": "./templates/logrotate-mesos.tpl",
+			"type": "file"
+		},
+		{
+			"destination": "/tmp/telegraf_mesos.conf",
+			"source": "./templates/telegraf-mesos.tpl",
+			"type": "file"
+		},
+		{
+			"destination": "/tmp/telegraf.conf",
+			"source": "./templates/telegraf-agent.tpl",
+			"type": "file"
+		},
+		{
+			"destination": "/tmp/telegraf_forwarder.conf",
+			"source": "./templates/telegraf-forwarder.tpl",
+			"type": "file"
+		},
+		{
+			"destination": "/tmp/telegraf_resource.conf",
+			"source": "./templates/telegraf-resource.tpl",
+			"type": "file"
+		},
+		{
+			"destination": "/tmp/docker_daemon.json",
+			"source": "./templates/docker_daemon.json",
+			"type": "file"
+		},
+		{
+			"inline": [
+				"sudo apt-get update",
+				"sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" --force-yes",
+				"sudo DEBIAN_FRONTEND=noninteractive apt-get install -o Dpkg::Options::=\"--force-confold\" --force-yes -y ntp gcj-4.8-jre-headless gcj-4.8-jre-lib libapr1 libaprutil1 libasound2 libasound2-data libcurl3 libgcj-common libgcj14 libsasl2-modules libserf-1-1 libsvn1 libapparmor1 cgroup-bin parted libltdl7 rsyslog-relp aufs-tools",
+				"wget {{user `mesos_url`}} -O /tmp/mesos.deb",
+				"sudo dpkg -i /tmp/mesos.deb ",
+				"wget {{user `docker_url`}} -O /tmp/docker.deb",
+				"sudo dpkg -i /tmp/docker.deb ",
+				"wget {{user `telegraf_url`}} -O /tmp/telegraf.deb",
+				"sudo dpkg -i /tmp/telegraf.deb ",
+				"sudo cp -f /tmp/telegraf /usr/bin/telegraf",
+				"sudo chmod 755 /usr/bin/telegraf",
+				"sudo cp -f /tmp/telegraf.conf /etc/telegraf/telegraf.conf",
+				"sudo cp -f /tmp/telegraf_resource.conf /etc/telegraf/telegraf.d/resource.conf",
+				"sudo cp -f /tmp/telegraf_mesos.conf /etc/telegraf/telegraf.d/mesos.conf",
+				"sudo cp -f /tmp/telegraf_forwarder.conf /etc/telegraf/telegraf.d/forwarder.conf",
+				"sudo cp -f /tmp/rsyslog.conf /etc/rsyslog.d/mesos.conf",
+				"sudo cp -f /tmp/rsyslog.relp.conf /etc/rsyslog.d/relp.conf",
+				"sudo cp -f /tmp/logrotate.conf /etc/logrotate.d/mesos.conf",
+				"sudo systemctl stop mesos-master",
+				"sudo systemctl disable mesos-master",
+				"echo 'zk://zookeeper:2181/mesos' | sudo tee /etc/mesos/zk >/dev/null",
+				"sudo ln -s /etc/mesos-slave /etc/mesos-agent",
+				"echo 'docker,mesos' | sudo tee /etc/mesos-agent/containerizers >/dev/null",
+				"echo 'cgroups/cpu,cgroups/mem' | sudo tee /etc/mesos-agent/isolation >/dev/null",
+				"echo '5mins' | sudo tee /etc/mesos-agent/executor_registration_timeout >/dev/null",
+				"echo 'org_apache_mesos_LogrotateContainerLogger' | sudo tee /etc/mesos-agent/container_logger >/dev/null",
+				"sudo cp /tmp/mesos-agent-module /etc/mesos-agent/modules",
+				"echo 'ports(*):[10000-40000]' | sudo tee /etc/mesos-agent/resources >/dev/null",
+				"echo \"* nofile 100000\"|sudo tee -a /etc/security/limits.conf",
+				"echo \"* nproc 256761\"|sudo tee -a /etc/security/limits.conf",
+				"echo \"* sigpending 256761\"|sudo tee -a /etc/security/limits.conf",
+				"sudo addgroup admin docker",
+				"sudo sed -i 's/rotate 4/rotate 30/' /etc/logrotate.d/rsyslog",
+				"sudo sed -i 's/weekly/daily/' /etc/logrotate.d/rsyslog",
+				"sudo cp -f /tmp/docker_daemon.json /etc/docker/daemon.json",
+				"sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT=\\\"/\\0cgroup_enable=memory swapaccount=1 /' /etc/default/grub",
+				"sudo update-grub",
+				"sudo apt-get clean && sudo rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*",
+				"sudo /sbin/parted ---pretend-input-tty /dev/xvda resizepart 1 yes 50G",
+				"sudo resize2fs /dev/xvda1"
+			],
+			"type": "shell"
+		}
+	],
+	"variables": {
+		"_comment": "https://wiki.debian.org/Cloud/AmazonEC2Image/Jessie",
+		"aws_ami": "ami-e31a6594",
+		"docker_url": "https://apt.dockerproject.org/repo/pool/main/d/docker-engine/docker-engine_1.11.1-0~jessie_amd64.deb",
+		"mesos_url": "http://repos.mesosphere.com/debian/pool/main/m/mesos/mesos_0.28.0-2.0.16.debian81_amd64.deb",
+		"region": "eu-west-1",
+		"telegraf_patch": "./telegraf",
+		"telegraf_url": "https://dl.influxdata.com/telegraf/releases/telegraf_0.13.0_amd64.deb",
+		"version": "0.28.0"
+	}
+}

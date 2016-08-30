@@ -1,0 +1,16 @@
+[Unit]
+Description=Exhibitor, A zookeeper Keeper
+After=network.target
+
+[Service]
+Environment=EX_CONF_TYPE=file
+EnvironmentFile=/etc/default/exhibitor
+User=root
+Restart=always
+RestartSec=20
+TimeoutStartSec=5
+WorkingDirectory=/opt/exhibitor
+ExecStart=/usr/bin/java -jar /opt/exhibitor/exhibitor.jar --configtype ${EX_CONF_TYPE} $EX_CONFIGURATION
+
+[Install]
+WantedBy=multi-user.target
