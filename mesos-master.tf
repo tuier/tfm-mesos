@@ -29,7 +29,7 @@ resource "aws_elb" "mesos-master" {
     healthy_threshold   = 2
     unhealthy_threshold = 3
     timeout             = 2
-    target              = "http:5050/"
+    target              = "HTTP:5050/"
     interval            = 10
   }
 
@@ -106,8 +106,8 @@ resource "aws_autoscaling_group" "mesos-master" {
 
 resource "aws_launch_configuration" "mesos-master" {
   name_prefix     = "${var.cluster_name}_mesos-master_"
-  image_id        = "${var.mesos_master_ami}"
-  instance_type   = "${var.instance_type_master}"
+  image_id        = "${var.master_ami}"
+  instance_type   = "${var.master_instance_type}"
   key_name        = "${var.aws_key_name}"
   security_groups = ["${aws_security_group.mesos.id}"]
 
@@ -115,22 +115,14 @@ resource "aws_launch_configuration" "mesos-master" {
     create_before_destroy = true
   }
 
-  user_data = "${template_file.launch_mesos_master.rendered}"
+  user_data = "${data.template_file.launch_mesos_master.rendered}"
 }
 
-resource "template_file" "launch_mesos_master" {
-  lifecycle {
-    create_before_destroy = true
-  }
-
+data "template_file" "launch_mesos_master" {
   vars {
     cluster_name = "${var.cluster_name}"
     fqdn         = "${var.cluster_name}.${var.fqdn}"
   }
 
   template = "${file("${path.module}/templates/mesos_master_user_data.tpl")}\n${var.master_extra_user_data}"
-
-  lifecycle {
-    create_before_destroy = true
-  }
 }

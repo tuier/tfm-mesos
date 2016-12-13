@@ -196,10 +196,10 @@ EOF
 resource "aws_launch_configuration" "zookeeper" {
   name_prefix          = "${var.cluster_name}_zookeeper"
   image_id             = "${var.zookeeper_ami}"
-  instance_type        = "${var.instance_type_zookeeer}"
+  instance_type        = "${var.zookeeper_instance_type}"
   key_name             = "${var.aws_key_name}"
   iam_instance_profile = "${aws_iam_instance_profile.zoo_profile.name}"
-  user_data            = "${template_file.launch_zookeeper.rendered}"
+  user_data            = "${data.template_file.launch_zookeeper.rendered}"
   security_groups      = ["${aws_security_group.mesos.id}"]
 
   lifecycle {
@@ -207,16 +207,12 @@ resource "aws_launch_configuration" "zookeeper" {
   }
 }
 
-resource "template_file" "launch_zookeeper" {
+data "template_file" "launch_zookeeper" {
   vars {
     asg_name     = "${var.cluster_name}_zookeeper"
     region       = "${var.region}"
     fqdn         = "${var.cluster_name}.${var.fqdn}"
     cluster_name = "${var.cluster_name}"
-  }
-
-  lifecycle {
-    create_before_destroy = true
   }
 
   template = "${file("${path.module}/templates/zookeeper_user_data.tpl")}\n${var.zookeeper_extra_user_data}"

@@ -2,7 +2,7 @@
 
 resource "aws_autoscaling_group" "mesos-agent" {
   name     = "${var.cluster_name}_mesos-agent"
-  max_size = 100
+  max_size = "${var.agent_max_capacity}"
   min_size = "${var.agent_min_capacity}"
 
   health_check_grace_period = 300
@@ -31,7 +31,7 @@ resource "aws_autoscaling_group" "mesos-agent" {
 
   tag {
     key                 = "product"
-    value               = "${var.tag_product}"
+    value               = "${var.tag_product_agent}"
     propagate_at_launch = true
   }
 
@@ -48,14 +48,14 @@ resource "aws_autoscaling_group" "mesos-agent" {
 }
 
 resource "aws_launch_configuration" "mesos-agent" {
-  name_prefix          = "${var.cluster_name}_mesos-agent"
-  image_id             = "${var.mesos_agent_ami}"
-  instance_type        = "${var.instance_type_agent}"
+  name_prefix          = "${var.cluster_name}_mesos-agent_"
+  image_id             = "${var.agent_ami}"
+  instance_type        = "${var.agent_instance_type}"
   iam_instance_profile = "${aws_iam_instance_profile.agent_profile.name}"
   key_name             = "${var.aws_key_name}"
   security_groups      = ["${aws_security_group.mesos.id}"]
 
-  user_data = "${template_file.launch_mesos_agent.rendered}"
+  user_data = "${data.template_file.launch_mesos_agent.rendered}"
 
   lifecycle {
     create_before_destroy = true
@@ -133,19 +133,11 @@ EOF
   }
 }
 
-resource "template_file" "launch_mesos_agent" {
-  lifecycle {
-    create_before_destroy = true
-  }
-
+data "template_file" "launch_mesos_agent" {
   vars {
     cluster_name = "${var.cluster_name}"
     fqdn         = "${var.cluster_name}.${var.fqdn}"
   }
 
   template = "${file("${path.module}/templates/mesos_agent_user_data.tpl")}\n${var.agent_extra_user_data}"
-
-  lifecycle {
-    create_before_destroy = true
-  }
 }

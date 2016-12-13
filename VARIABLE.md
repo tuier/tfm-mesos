@@ -18,7 +18,7 @@
 * zookeeper_ami: AMI for Zookeeper instance
 * instance_type_zookeeer: Type of amazon instance use to run Zookeeper
 * zookeeper_capacity: number of desired instance in the initialisation of ASG
-* zookeeper_extra_user_data: Extra user data to use in the bastion
+* zookeeper_extra_user_data: Extra user data to use in Zookeeper
 
 ## Mesos master
 

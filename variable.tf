@@ -9,6 +9,7 @@ variable "region" {
   description = "AWS region to setup the cluster"
 }
 
+# network
 variable "azs_name" {
   default     = ""
   description = "Availability zones across to setup the cluster (default all from the region)"
@@ -34,7 +35,7 @@ variable "zookeeper_ami" {
   description = "AMI for zookeeper instance"
 }
 
-variable "instance_type_zookeeer" {
+variable "zookeeper_instance_type" {
   default     = ""
   description = "Type of amazon instance use to run zookeeper"
 }
@@ -50,12 +51,12 @@ variable "zookeeper_extra_user_data" {
 }
 
 #mesos master
-variable "mesos_master_ami" {
+variable "master_ami" {
   default     = ""
   description = "AMI for mesos-master instance"
 }
 
-variable "instance_type_master" {
+variable "master_instance_type" {
   default     = ""
   description = "Type of amazon instance use to run mesos-master"
 }
@@ -71,12 +72,12 @@ variable "master_extra_user_data" {
 }
 
 #mesos agent
-variable "mesos_agent_ami" {
+variable "agent_ami" {
   default     = ""
   description = "AMI for mesos-agent instance"
 }
 
-variable "instance_type_agent" {
+variable "agent_instance_type" {
   default     = ""
   description = "Type of amazon instance use to run mesos-agent"
 }
@@ -84,6 +85,11 @@ variable "instance_type_agent" {
 variable "agent_min_capacity" {
   default     = "3"
   description = "number of desired instance in the initialisation of ASG"
+}
+
+variable "agent_max_capacity" {
+  default     = "30"
+  description = "max number of instance in the ASG"
 }
 
 variable "agent_extra_user_data" {
@@ -108,45 +114,15 @@ variable "fqdn" {
   description = "First level domain where to create subdomain"
 }
 
-#auto scale
-variable "node_gather_handler" {
-  default     = ""
-  description = "name of the handle witht the form <module>.<function_handler>"
-}
-
-variable "node_process_handler" {
-  default     = ""
-  description = "name of the handle witht the form <module>.<function_handler>"
-}
-
-variable "node_scale_handler" {
-  default     = ""
-  description = "name of the handle witht the form <module>.<function_handler>"
-}
-
-variable "scale_up_threshold" {
-  default     = "80"
-  description = "percent over will scale up"
-}
-
-variable "scale_down_threshold" {
-  default     = "40"
-  description = "percent under will scale down"
-}
-
-variable "mem_resource" {
-  default     = "32"
-  description = "total memory per node"
-}
-
-variable "cpu_resource" {
-  default     = "8"
-  description = "total cpu per node"
-}
-
+# Tags
 variable "tag_product" {
   default     = "mesos"
-  description = "when setup a product tag is setup on all resources, with that value"
+  description = "when setup a product tag is setup on all resources, except agent , with that value"
+}
+
+variable "tag_product_agent" {
+  default     = "mesos"
+  description = "when setup a product tag is setup on all agent, with that value"
 }
 
 variable "tag_purpose" {

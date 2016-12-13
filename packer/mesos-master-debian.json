@@ -8,7 +8,7 @@
 					"volume_size": 20
 				}
 			],
-			"ami_name": "mesos-master-{{user `version`}}-{{isotime `2006-01-02_15_04`}}",
+			"ami_name": "simple-mesos-master-{{user `version`}}-{{isotime `2006-01-02_15_04`}}",
 			"associate_public_ip_address": true,
 			"instance_type": "m3.medium",
 			"launch_block_device_mappings": [
@@ -35,45 +35,16 @@
 	],
 	"provisioners": [
 		{
-			"destination": "/tmp/telegraf",
-			"source": "{{user `telegraf_patch`}}",
-			"type": "file"
-		},
-		{
-			"destination": "/tmp/rsyslog.conf",
-			"source": "./templates/rsyslog-mesos.tpl",
-			"type": "file"
-		},
-		{
 			"destination": "/tmp/logrotate.conf",
 			"source": "./templates/logrotate-mesos.tpl",
-			"type": "file"
-		},
-		{
-			"destination": "/tmp/telegraf.conf",
-			"source": "./templates/telegraf-agent.tpl",
-			"type": "file"
-		},
-		{
-			"destination": "/tmp/telegraf_forwarder.conf",
-			"source": "./templates/telegraf-forwarder.tpl",
-			"type": "file"
-		},
-		{
-			"destination": "/tmp/rsyslog.relp.conf",
-			"source": "./templates/rsyslog-relp.tpl",
-			"type": "file"
-		},
-		{
-			"destination": "/tmp/telegraf_resource.conf",
-			"source": "./templates/telegraf-resource.tpl",
 			"type": "file"
 		},
 		{
 			"inline": [
 				"sudo apt-get update",
 				"sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" --force-yes",
-				"sudo DEBIAN_FRONTEND=noninteractive apt-get install -o Dpkg::Options::=\"--force-confold\" --force-yes -y ntp gcj-4.8-jre-headless gcj-4.8-jre-lib libapr1 libaprutil1 libasound2 libasound2-data libcurl3 libgcj-common libgcj14 libsasl2-modules libserf-1-1 libsvn1 parted rsyslog-relp",
+				"sudo apt-get update",
+				"sudo DEBIAN_FRONTEND=noninteractive apt-get install -o Dpkg::Options::=\"--force-confold\" --force-yes -y ntp openjdk-7-jre-headless libevent-dev libsvn1 libsasl2-modules python libcurl3",
 				"wget {{user `mesos_url`}} -O /tmp/mesos.deb",
 				"sudo dpkg -i /tmp/mesos.deb ",
 				"sudo systemctl stop mesos-slave",
@@ -82,31 +53,17 @@
 				"echo \"* nofile 100000\"|sudo tee -a /etc/security/limits.conf",
 				"echo \"* nproc 256761\"|sudo tee -a /etc/security/limits.conf",
 				"echo \"* sigpending 256761\"|sudo tee -a /etc/security/limits.conf",
-				"sudo cp -f /tmp/rsyslog.conf /etc/rsyslog.d/mesos.conf",
-				"sudo cp -f /tmp/rsyslog.relp.conf /etc/rsyslog.d/relp.conf",
 				"sudo cp -f /tmp/logrotate.conf /etc/logrotate.d/mesos.conf",
-				"wget {{user `telegraf_url`}} -O /tmp/telegraf.deb",
-				"sudo dpkg -i /tmp/telegraf.deb ",
-				"sudo cp -f /tmp/telegraf /usr/bin/telegraf",
-				"sudo chmod 755 /usr/bin/telegraf",
-				"sudo cp -f /tmp/telegraf.conf /etc/telegraf/telegraf.conf",
-				"sudo cp -f /tmp/telegraf_resource.conf /etc/telegraf/telegraf.d/resource.conf",
-				"sudo cp -f /tmp/telegraf_forwarder.conf /etc/telegraf/telegraf.d/forwarder.conf",
-				"sudo apt-get clean && sudo rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*",
-				"sudo /sbin/parted ---pretend-input-tty /dev/xvda resizepart 1 yes 20G",
-				"sudo resize2fs /dev/xvda1",
-				"sudo reboot"
+				"sudo apt-get clean && sudo rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*"
 			],
 			"type": "shell"
 		}
 	],
 	"variables": {
 		"_comment": "https://wiki.debian.org/Cloud/AmazonEC2Image/Jessie",
-		"aws_ami": "ami-e31a6594",
-		"mesos_url": "http://repos.mesosphere.com/debian/pool/main/m/mesos/mesos_0.28.0-2.0.16.debian81_amd64.deb",
+		"aws_ami": "ami-ff0e758c",
+		"mesos_url": "http://repos.mesosphere.com/debian/pool/main/m/mesos/mesos_1.1.0-2.0.107.debian81_amd64.deb",
 		"region": "eu-west-1",
-		"telegraf_patch": "./telegraf",
-		"telegraf_url": "https://dl.influxdata.com/telegraf/releases/telegraf_0.13.0_amd64.deb",
-		"version": "0.28"
+		"version": "1.0.1"
 	}
 }

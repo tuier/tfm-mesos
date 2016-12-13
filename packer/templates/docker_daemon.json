@@ -1,11 +1,6 @@
 {
     "debug": false,
-    "log-driver": "syslog",
     "log-level": "warn",
-    "log-opts": {
-        "syslog-address": "udp://localhost:1095",
-        "syslog-format": "rfc5424"
-    },
     "raw-logs": true,
     "storage-driver": "aufs"
 }

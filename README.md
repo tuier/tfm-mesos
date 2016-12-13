@@ -77,38 +77,3 @@ An ELB is create accessible through Route53 entry at
 
 Some sample ami are available on the "packer" directory
 
-
-# Auto Scaling
-
-
-this auto scaling part is in the [scale](scale)  directory
-
-## Lambda 
-
-* Auto scaling use AWS lambda as a scheduled run and execute some python code to:
-** gather metric
-** process metric
-** scale node
-
-
-## Build
-
-A Terraform resource is meant to build the node part of the submodule before
-using it, any change should be re-build and re-push when done that.
-
-## Design
-
-See README from the Auto Scale Repo
-
-
-## Destroy
-
-When destroying a ENI will be left behind by the lambda who had access to VPC, 
-	 and this mean tht the subnet will not be destory until that is remove.
-
-This is a bug and will be probably fixed by Terraform,
-	 https://github.com/hashicorp/terraform/issues/5767
-# How to use
-
-Some sample terraform configuration is in the [sample](sample) directory and 
-the Variable are described in [Variable](VARIABLE.md)

@@ -21,6 +21,15 @@ packer build packer/mesos-master-debian.json
 * AWS AMI: is the source AMI your creation is based on
 Also AWS credentials must be configured.
 
+
+### Name
+
+The AMI will be named base on the version and the time of the build following 
+that pattern
+simple-mesos-master-<version>-<build_time>
+Where version is the **version** specified in input and **build_time** the 
+time, following that pattern *2006-01-02_15_04*, when the images is build
+
 # Zookeeper
 
 ### Build
@@ -45,7 +54,7 @@ Also AWS credentials must be configured.
 
 The AMI will be named base on the version and the time of the build following 
 that pattern
-zk-exhibitor-<build_time>
+simple-zk-exhibitor-<build_time>
 Where version is the **version** specified in input and **build_time** the 
 time, following that pattern *2006-01-02_15_04*, when the images is build
 
@@ -76,7 +85,7 @@ Also AWS credentials must be configured.
 
 The AMI will be named base on the version and the time of the build following 
 that pattern
-mesos-agent-<version>-<build_time>
+simple-mesos-agent-<version>-<build_time>
 Where version is the **version** specified in input and **build_time** the 
 time, following that pattern *2006-01-02_15_04*, when the images is build
 

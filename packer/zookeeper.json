@@ -35,26 +35,6 @@
 	],
 	"provisioners": [
 		{
-			"destination": "/tmp/telegraf.conf",
-			"source": "./templates/telegraf-agent.tpl",
-			"type": "file"
-		},
-		{
-			"destination": "/tmp/telegraf_forwarder.conf",
-			"source": "./templates/telegraf-forwarder.tpl",
-			"type": "file"
-		},
-		{
-			"destination": "/tmp/telegraf_resource.conf",
-			"source": "./templates/telegraf-resource.tpl",
-			"type": "file"
-		},
-		{
-			"destination": "/tmp/telegraf_zookeeper.conf",
-			"source": "./templates/telegraf-zookeeper.tpl",
-			"type": "file"
-		},
-		{
 			"destination": "/tmp/exhibitor.service",
 			"source": "templates/exhibitor.service",
 			"type": "file"
@@ -62,21 +42,6 @@
 		{
 			"destination": "/tmp/exhibitor_default.conf",
 			"source": "templates/exhibitor_default.conf",
-			"type": "file"
-		},
-		{
-			"destination": "/tmp/telegraf",
-			"source": "{{user `telegraf_patch`}}",
-			"type": "file"
-		},
-		{
-			"destination": "/tmp/rsyslog.conf",
-			"source": "./templates/rsyslog-zookeeper.tpl",
-			"type": "file"
-		},
-		{
-			"destination": "/tmp/rsyslog.relp.conf",
-			"source": "./templates/rsyslog-relp.tpl",
 			"type": "file"
 		},
 		{
@@ -88,7 +53,8 @@
 			"inline": [
 				"sudo apt-get update",
 				"sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" --force-yes",
-				"sudo DEBIAN_FRONTEND=noninteractive apt-get install -o Dpkg::Options::=\"--force-confold\" --force-yes -y ntp openjdk-7-jdk parted maven zookeeper wget rsyslog-relp",
+				"sudo apt-get update",
+				"sudo DEBIAN_FRONTEND=noninteractive apt-get install -o Dpkg::Options::=\"--force-confold\" --force-yes -y ntp openjdk-7-jdk parted maven zookeeper wget",
 				"sudo mkdir -p /opt/exhibitor/",
 				"sudo wget {{user `exhibitor_pom`}} -O /opt/exhibitor/pom.xml",
 				"cd /opt/exhibitor/",
@@ -100,32 +66,19 @@
 				"sudo ln -s /usr/share/java/zookeeper.jar /etc/zookeeper/zookeeper.jar",
 				"sudo ln -s /usr/share/java /etc/zookeeper/lib",
 				"sudo ln -s /usr/share/zookeeper/bin /etc/zookeeper/bin",
-				"sudo cp -f /tmp/rsyslog.conf /etc/rsyslog.d/zookeeper.conf",
-				"sudo cp -f /tmp/rsyslog.relp.conf /etc/rsyslog.d/relp.conf",
 				"sudo cp -f /tmp/logrotate.conf /etc/logrotate.d/zookeeper.conf",
-				"wget {{user `telegraf_url`}} -O /tmp/telegraf.deb",
-				"sudo dpkg -i /tmp/telegraf.deb ",
-				"sudo cp -f /tmp/telegraf /usr/bin/telegraf",
-				"sudo chmod 755 /usr/bin/telegraf",
-				"sudo cp -f /tmp/telegraf.conf /etc/telegraf/telegraf.conf",
-				"sudo cp -f /tmp/telegraf_resource.conf /etc/telegraf/telegraf.d/resource.conf",
-				"sudo cp -f /tmp/telegraf_zookeeper.conf /etc/telegraf/telegraf.d/zookeeper.conf",
-				"sudo cp -f /tmp/telegraf_forwarder.conf /etc/telegraf/telegraf.d/forwarder.conf",
 				"sudo apt-get autoremove -y",
-				"sudo apt-get clean",
-				"sudo rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*",
-				"sudo /sbin/parted ---pretend-input-tty /dev/xvda resizepart 1 yes 20G",
-				"sudo resize2fs /dev/xvda1"
+				"sudo apt-get clean && sudo rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*"
 			],
 			"type": "shell"
 		}
 	],
 	"variables": {
 		"_comment": "https://wiki.debian.org/Cloud/AmazonEC2Image/Jessie",
-		"aws_ami": "ami-e31a6594",
+		"aws_ami": "ami-ff0e758c",
+		"filebeat_url": "https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-5.0.2-amd64.deb",
+		"sysdig_agent_url":"http://download.draios.com/stable/deb/stable-amd64/draios-0.44.0-x86_64-agent.deb",
 		"exhibitor_pom": "https://raw.githubusercontent.com/Netflix/exhibitor/v1.5.6/exhibitor-standalone/src/main/resources/buildscripts/standalone/maven/pom.xml",
-		"region": "eu-west-1",
-		"telegraf_patch": "./telegraf",
-		"telegraf_url": "https://dl.influxdata.com/telegraf/releases/telegraf_0.13.0_amd64.deb"
+		"region": "eu-west-1"
 	}
 }

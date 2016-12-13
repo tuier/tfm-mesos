@@ -55,7 +55,7 @@ resource "aws_route53_record" "ns_cluster" {
 # S3
 resource "aws_s3_bucket" "create_s3" {
   bucket        = "${var.cluster_name}.${var.fqdn}"
-  policy        = "${template_file.s3_policy.rendered}"
+  policy        = "${data.template_file.s3_policy.rendered}"
   force_destroy = true
 
   tags {
@@ -70,15 +70,11 @@ resource "aws_s3_bucket" "create_s3" {
   }
 }
 
-resource "template_file" "s3_policy" {
+data "template_file" "s3_policy" {
   vars {
     vpc_id      = "${module.vpc.id}"
     bucket_name = "${var.cluster_name}.${var.fqdn}"
   }
 
   template = "${file("${path.module}/templates/s3_policy.tpl")}"
-
-  lifecycle {
-    create_before_destroy = true
-  }
 }
